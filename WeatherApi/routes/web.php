@@ -11,10 +11,12 @@
 |
 */
 
-Route::get('/', function () {
-    return view('welcome');
-});
+//Route::get('/', function () {
+//    return view('welcome');
+//});
+//
+//Route::get('getRegions', function () {
+//    return '哈哈';
+//});
 
-Route::get('getRegions', function () {
-    return '哈哈';
-});
+Route::get('/', 'GetWeatherController@test');

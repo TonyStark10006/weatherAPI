@@ -53,7 +53,10 @@ class GetWeatherController extends Controller
 
     public function getCityCode($city)
     {
-        $result = CNRegions::where('city_name', $city)->value('china_weather_city_code');
+        $result = CNRegions::where([
+                        ['city_name', $city],
+                        ['china_weather_city_code', '!=', null]
+                    ])->value('china_weather_city_code');
         debugbar()->info($result);
         //$crawler = new Crawler();
         //$result = $crawler->select(file_get_contents(__DIR__ . '/../../../../public/weatherCityCode.xml'),
@@ -65,4 +68,5 @@ class GetWeatherController extends Controller
             return ['cityName' => '广州市', 'cityCode' => 101280101];
         }
     }
+
 }
