@@ -3,9 +3,9 @@ namespace App\Traits;
 
 trait APIMsg
 {
-    public $success = ['status' => 'success', 'msg' => 'YOU GOT IT'];
+    public $success = ['status' => '200', 'msg' => 'YOU GOT IT'];
 
-    public $failure = ['status' => 'failure', 'msg' => 'NO GOOD'];
+    public $failure = ['status' => '404', 'msg' => 'NO GOOD'];
 
     public function mergeResponse(array $status, array $data, $title = null)
     {
