@@ -4,6 +4,7 @@ namespace App\Utils;
 class Crawler
 {
     protected $data;
+    public $errorMsg;
 
     public function __construct()
     {
@@ -21,6 +22,11 @@ class Crawler
         ]);
 
         $html = curl_exec($ch);
+
+        if (!$html) {
+            $this->errorMsg = curl_error($ch);
+            return false;
+        }
         $html = @mb_convert_encoding($html, 'UTF-8');
         curl_close($ch);
         return $html;
@@ -64,5 +70,10 @@ class Crawler
     public function extraRule($html, $pattern, $replacement)
     {
         return preg_replace($pattern, $replacement, $html);
+    }
+
+    public function getErrorMsg()
+    {
+        return $this->errorMsg;
     }
 }

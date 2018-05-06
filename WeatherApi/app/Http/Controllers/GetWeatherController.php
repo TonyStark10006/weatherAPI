@@ -5,6 +5,7 @@ use App\Models\CNRegions;
 use App\Traits\APIMsg;
 use App\Utils\Crawler;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redis;
 
 class GetWeatherController extends Controller
@@ -12,16 +13,43 @@ class GetWeatherController extends Controller
     //
     use APIMsg;
 
-    public function getWeatherMsg(Request $request)
+    public function getWeather(Request $request)
     {
-        $target = self::getCityCode($request->input('city'));
+        $queryString = $request->query('city');
 
-        if (Redis::keys($target['cityName'])) {
-            $wea = unserialize(Redis::get($target['cityName']));
+        if (empty($queryString)) {
+            $city = $data = 'nothing found';
+        } elseif (ctype_digit($queryString) && mb_strlen($queryString) == 6) {
+            if ($city = self::getCityName((int) $queryString)) {
+                //dd($city);
+                $data = self::getWeatherMsg((int) self::getCityCode($city));
+            } else {
+                $city = $data = 'nothing found';
+            }
+        } else {
+            $data = self::getWeatherMsg((int) self::getCityCode($queryString));
+            $city = $queryString;
+        }
+
+        return response()->json(
+            array_merge($this->success, ['city' => $city], ['data' => $data]),
+            200, [], 256);
+    }
+
+    public function getWeatherMsg(int $target)
+    {
+        if (Redis::keys($target)) {
+            $wea = unserialize(Redis::get($target));
         } else {
             $crawler = new Crawler();
-            $url = 'http://www.weather.com.cn/weather/' . $target['cityCode'] . '.shtml';
+            $url = 'http://www.weather.com.cn/weather/' . $target . '.shtml';
             $originHtml = $crawler->download($url);
+            //dd($url);
+            if (!$originHtml) {
+                Log::error('下载城市代码为' . $target . '的天气信息网页出错 - 错误信息' . $crawler->getErrorMsg());
+                return false;
+            }
+
             $filtedHtml = $crawler->extraRule($originHtml,'/<[0-9]/', '&lt;3');
             $coldDress = $crawler->select($filtedHtml, "
             //ul[contains(@class, 'clearfix')]/li[@class='li2']/p | 
@@ -30,6 +58,7 @@ class GetWeatherController extends Controller
             $data = $crawler->select($filtedHtml,
                 "//ul[contains(@class, 't clearfix')]/li[contains(@class, 'sky skyid')]");
 
+            debugbar()->info($data);
             for ($j = 0, $z = 0; $j < count($data); $j++, $z = $z + 2) {
                 $wea[$j][] = $crawler->select($data[$j], '//h1');
                 $wea[$j][] = $crawler->select($data[$j], "//p[@class='wea']");
@@ -42,16 +71,17 @@ class GetWeatherController extends Controller
                 $wea[$j][] = $coldDress[$z];
                 $wea[$j][] = $coldDress[$z + 1];
             }
-            Redis::set($target['cityName'], serialize($wea));
-            Redis::expire($target['cityName'], 21600);
+            Redis::set($target, serialize($wea));
+            Redis::expire($target, 21600);
         }
 
-        return response()->json(
-            array_merge($this->success, ['city' => $target['cityName']], ['data' => $wea]),
-            200, [], 256);
+        return $wea;
+//        return response()->json(
+//            array_merge($this->success, ['city' => $target['cityName']], ['data' => $wea]),
+//            200, [], 256);
     }
 
-    public function getCityCode($city)
+    public function getCityCode(string $city)
     {
         $result = CNRegions::where([
                         ['city_name', $city],
@@ -61,12 +91,20 @@ class GetWeatherController extends Controller
         //$crawler = new Crawler();
         //$result = $crawler->select(file_get_contents(__DIR__ . '/../../../../public/weatherCityCode.xml'),
         //    "//county[contains('{$city}', @name)]/@weathercode");
-        //假如搜索不到城市，则默认返回广州城市代码
-        if ($result) {
-            return ['cityName' => $city, 'cityCode' => $result];
-        } else {
-            return ['cityName' => '广州市', 'cityCode' => 101280101];
-        }
+        return $result;
+    }
+
+    public function getCityName(int $cityCode)
+    {
+        return CNRegions::where('city_code', $cityCode)->value('city_name');
+    }
+
+    public function getCityCodeByInt(int $cityCode)
+    {
+        return CNRegions::where([
+            ['city_name', $cityCode],
+            ['china_weather_city_code', '!=', null]
+        ])->value('china_weather_city_code');
     }
 
 }

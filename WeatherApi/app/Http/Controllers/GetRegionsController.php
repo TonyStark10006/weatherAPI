@@ -13,18 +13,21 @@ class GetRegionsController extends Controller
 
     public function __construct(Request $request)
     {
-        debugbar()->info(gettype($request->input('code')));
-        $this->queryCode = filter_var($request->input('code'), FILTER_SANITIZE_NUMBER_INT);
+        debugbar()->info(gettype($request->query('code')));
+        $this->queryCode = filter_var($request->query('code'), FILTER_SANITIZE_NUMBER_INT);
     }
 
     public function getRegions()
     {
-        if ($this->queryCode == '0') {
-            return self::getAllRegions();
-        }
+        if ($this->queryCode != '') {
+            if ($this->queryCode == '0') {
+                return self::getAllRegions();
+            }
 
-        if (substr($this->queryCode, 3, -2) !== '00') {
-            return self::getCites($this->queryCode);
+            if (substr($this->queryCode, 3, -2) !== '00') {
+                dd($this->queryCode);
+                return self::getCites($this->queryCode);
+            }
         }
 
         return response()->json(array_merge(self::MSG, ['result' => 'nothing found']), '200', [], 256);

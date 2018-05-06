@@ -17,11 +17,9 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-Route::get('getRegions', 'GetRegionsController@getRegions');
+Route::middleware('throttle:20,1')->group(function () {
+    Route::get('getRegions', 'GetRegionsController@getRegions');
 
-Route::get('getWeatherMsg', 'GetWeatherController@getWeatherMsg');
-//Route::group(['middleware' => ['auth.api']], function () {
-//    Route::get('getRegions', function () {
-//        return '哈哈';
-//    });
-//});
+    Route::get('getWeatherMsg', 'GetWeatherController@getWeather');
+});
+
