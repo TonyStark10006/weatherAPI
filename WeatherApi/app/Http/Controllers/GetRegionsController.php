@@ -25,7 +25,7 @@ class GetRegionsController extends Controller
             }
 
             if (substr($this->queryCode, 3, -2) !== '00') {
-                dd($this->queryCode);
+                //dd($this->queryCode);
                 return self::getCites($this->queryCode);
             }
         }

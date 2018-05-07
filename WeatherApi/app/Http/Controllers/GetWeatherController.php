@@ -27,13 +27,17 @@ class GetWeatherController extends Controller
                 $city = $data = 'nothing found';
             }
         } else {
-            $data = self::getWeatherMsg((int) self::getCityCode($queryString));
-            $city = $queryString;
+            if ($code = (int) self::getCityCode($queryString)) {
+                $data = self::getWeatherMsg($code);
+                $city = $queryString;
+            } else {
+                $city = $data = 'nothing found';
+            }
+
         }
 
-        return response()->json(
-            array_merge($this->success, ['city' => $city], ['data' => $data]),
-            200, [], 256);
+        return gettype($data) == 'array' ? self::mergeResponse(self::$success, $data, 'city', $city) :
+            self::mergeResponse(self::$failure, $data, 'city', $city);
     }
 
     public function getWeatherMsg(int $target)

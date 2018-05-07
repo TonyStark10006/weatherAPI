@@ -3,11 +3,11 @@ namespace App\Traits;
 
 trait APIMsg
 {
-    public $success = ['status' => '200', 'msg' => 'YOU GOT IT'];
+    public static $success = ['status' => 200, 'msg' => 'YOU GOT IT'];
 
-    public $failure = ['status' => '404', 'msg' => 'NO GOOD'];
+    public static $failure = ['status' => 404, 'msg' => 'NO GOOD'];
 
-    public function mergeResponse(array $status, array $data, $title = null)
+    public static function mergeResponse(array $status, $data, string $title = null, string $tContent = null)
     {
         if (empty($title)) {
             return response()->json(
@@ -15,7 +15,7 @@ trait APIMsg
                 200, [], 256);
         } else {
             return response()->json(
-                array_merge($status, [$title => $data]),
+                array_merge($status, ["{$title}" => $tContent, 'data' => $data]),
                 200, [], 256);
         }
     }
