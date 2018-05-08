@@ -33,7 +33,6 @@ class GetWeatherController extends Controller
             } else {
                 $city = $data = 'nothing found';
             }
-
         }
 
         return gettype($data) == 'array' ? self::mergeResponse(self::$success, $data, 'city', $city) :
@@ -50,8 +49,8 @@ class GetWeatherController extends Controller
             $originHtml = $crawler->download($url);
             //dd($url);
             if (!$originHtml) {
-                Log::error('下载城市代码为' . $target . '的天气信息网页出错 - 错误信息' . $crawler->getErrorMsg());
-                return false;
+                Log::error('下载城市代码为' . $target . '的天气信息网页出错 - 错误信息: ' . $crawler->getErrorMsg());
+                return 'nothing found';
             }
 
             $filtedHtml = $crawler->extraRule($originHtml,'/<[0-9]/', '&lt;3');
@@ -66,10 +65,15 @@ class GetWeatherController extends Controller
             for ($j = 0, $z = 0; $j < count($data); $j++, $z = $z + 2) {
                 $wea[$j][] = $crawler->select($data[$j], '//h1');
                 $wea[$j][] = $crawler->select($data[$j], "//p[@class='wea']");
-                $wea[$j][] = $crawler->select($data[$j], "//p[@class='tem']/span") . " - " .
-                    $crawler->select($data[$j], "//p[@class='tem']/i");
-                $wea[$j][] = $crawler->select($data[$j], "//p[@class='win']/em//@title")[0] . " - " .
-                    $crawler->select($data[$j], "//p[@class='win']/em//@title")[1];
+                if (gettype($winDirect = $crawler->select($data[$j], "//p[@class='win']/em//@title")) == 'array') {
+                    $wea[$j][] = $crawler->select($data[$j], "//p[@class='tem']/span") . " - " .
+                        $crawler->select($data[$j], "//p[@class='tem']/i");
+                    $wea[$j][] = $winDirect[0] . " - " . $winDirect[1];
+                } else {
+                    $wea[$j][] = $crawler->select($data[$j], "//p[@class='tem']/i");
+                    $wea[$j][] = $winDirect;
+                }
+
                 $wea[$j][] = preg_replace("/&lt;/", '<',
                     $crawler->select($data[$j], "//p[@class='win']//i"));
                 $wea[$j][] = $coldDress[$z];
