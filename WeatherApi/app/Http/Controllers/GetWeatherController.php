@@ -55,7 +55,7 @@ class GetWeatherController extends Controller
 
             $filtedHtml = $crawler->extraRule($originHtml,'/<[0-9]/', '&lt;3');
             $coldDress = $crawler->select($filtedHtml, "
-            //ul[contains(@class, 'clearfix')]/li[@class='li2']/p | 
+            //ul[contains(@class, 'clearfix')]/li[contains(@class, 'li2')]//p | 
             //ul[contains(@class, 'clearfix')]/li[@class='li3 hot']/a/p"
             );
             $data = $crawler->select($filtedHtml,
