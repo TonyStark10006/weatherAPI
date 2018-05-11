@@ -22,14 +22,14 @@ class GetWeatherController extends Controller
         } elseif (ctype_digit($queryString) && mb_strlen($queryString) == 6) {
             if ($city = self::getCityName((int) $queryString)) {
                 //dd($city);
-                $data = self::getWeatherMsg((int) self::getCityCode($city));
+                $data = self::getWeatherMsg((int) self::getCityCode($city)[0]);
             } else {
                 $city = $data = 'nothing found';
             }
         } else {
-            if ($code = (int) self::getCityCode($queryString)) {
-                $data = self::getWeatherMsg($code);
-                $city = $queryString;
+            if ($result = self::getCityCode($queryString)) {
+                $data = self::getWeatherMsg((int) $result[0]);
+                $city = $result[1];
             } else {
                 $city = $data = 'nothing found';
             }
@@ -92,14 +92,14 @@ class GetWeatherController extends Controller
     public function getCityCode(string $city)
     {
         $result = CNRegions::where([
-                        ['city_name', $city],
+                        ['city_name', 'like', '%' . $city . '%'],
                         ['china_weather_city_code', '!=', null]
-                    ])->value('china_weather_city_code');
-        debugbar()->info($result);
+                    ])->select('china_weather_city_code', 'city_name')->groupBy('city_name')->get();
+        //dd($result[0]);
         //$crawler = new Crawler();
         //$result = $crawler->select(file_get_contents(__DIR__ . '/../../../../public/weatherCityCode.xml'),
         //    "//county[contains('{$city}', @name)]/@weathercode");
-        return $result;
+        return count($result) == 1 ? [$result[0]->china_weather_city_code, $result[0]->city_name] : false;
     }
 
     public function getCityName(int $cityCode)
