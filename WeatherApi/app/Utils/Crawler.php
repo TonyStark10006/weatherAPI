@@ -4,14 +4,22 @@ namespace App\Utils;
 class Crawler
 {
     protected $data;
-    public $errorMsg;
+    public static $errorMsg;
+
+    /**
+     * @return mixed
+     */
+    public static function getErrorMsg()
+    {
+        return self::$errorMsg;
+    }
 
     public function __construct()
     {
         //
     }
 
-    public function download($url)
+    public static function download($url)
     {
         $ch = curl_init();
 
@@ -24,7 +32,7 @@ class Crawler
         $html = curl_exec($ch);
 
         if (!$html) {
-            $this->errorMsg = curl_error($ch);
+            self::$errorMsg = curl_error($ch);
             return false;
         }
         $html = @mb_convert_encoding($html, 'UTF-8');
@@ -32,7 +40,7 @@ class Crawler
         return $html;
     }
 
-    public function select($html, $selector)
+    public static function select($html, $selector)
     {
         $model = new \DOMDocument();
         //加入xml声明标签，保证二次筛选不会出现乱码
@@ -63,17 +71,12 @@ class Crawler
             return false;
         }
 
-        app('debugbar')->info($data);
         return count($data) > 1 ? $data : $data[0];
     }
 
-    public function extraRule($html, $pattern, $replacement)
+    public static function extraRule($html, $pattern, $replacement)
     {
         return preg_replace($pattern, $replacement, $html);
     }
 
-    public function getErrorMsg()
-    {
-        return $this->errorMsg;
-    }
 }

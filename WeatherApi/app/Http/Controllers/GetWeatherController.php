@@ -35,7 +35,7 @@ class GetWeatherController extends Controller
             }
         }
 
-        return gettype($data) == 'array' ? self::mergeResponse(self::$success, $data, 'city', $city) :
+        return is_array($data) ? self::mergeResponse(self::$success, $data, 'city', $city) :
             self::mergeResponse(self::$failure, $data, 'city', $city);
     }
 
@@ -44,38 +44,36 @@ class GetWeatherController extends Controller
         if (Redis::keys($target)) {
             $wea = unserialize(Redis::get($target));
         } else {
-            $crawler = new Crawler();
             $url = 'http://www.weather.com.cn/weather/' . $target . '.shtml';
-            $originHtml = $crawler->download($url);
-            //dd($url);
+            $originHtml = Crawler::download($url);
             if (!$originHtml) {
-                Log::error('下载城市代码为' . $target . '的天气信息网页出错 - 错误信息: ' . $crawler->getErrorMsg());
+                Log::error('下载城市代码为' . $target . '的天气信息网页出错 - 错误信息: ' . Crawler::getErrorMsg());
                 return 'nothing found';
             }
 
-            $filtedHtml = $crawler->extraRule($originHtml,'/<[0-9]/', '&lt;3');
-            $coldDress = $crawler->select($filtedHtml, "
+            $filtedHtml = Crawler::extraRule($originHtml,'/<[0-9]/', '&lt;3');
+            $coldDress = Crawler::select($filtedHtml, "
             //ul[contains(@class, 'clearfix')]/li[contains(@class, 'li2')]//p | 
             //ul[contains(@class, 'clearfix')]/li[@class='li3 hot']/a/p"
             );
-            $data = $crawler->select($filtedHtml,
+            $data = Crawler::select($filtedHtml,
                 "//ul[contains(@class, 't clearfix')]/li[contains(@class, 'sky skyid')]");
 
             debugbar()->info($data);
             for ($j = 0, $z = 0; $j < count($data); $j++, $z = $z + 2) {
-                $wea[$j][] = $crawler->select($data[$j], '//h1');
-                $wea[$j][] = $crawler->select($data[$j], "//p[@class='wea']");
-                if (gettype($winDirect = $crawler->select($data[$j], "//p[@class='win']/em//@title")) == 'array') {
-                    $wea[$j][] = $crawler->select($data[$j], "//p[@class='tem']/span") . " - " .
-                        $crawler->select($data[$j], "//p[@class='tem']/i");
+                $wea[$j][] = Crawler::select($data[$j], '//h1');
+                $wea[$j][] = Crawler::select($data[$j], "//p[@class='wea']");
+                if (is_array($winDirect = Crawler::select($data[$j], "//p[@class='win']/em//@title"))) {
+                    $wea[$j][] = Crawler::select($data[$j], "//p[@class='tem']/span") . " - " .
+                        Crawler::select($data[$j], "//p[@class='tem']/i");
                     $wea[$j][] = $winDirect[0] . " - " . $winDirect[1];
                 } else {
-                    $wea[$j][] = $crawler->select($data[$j], "//p[@class='tem']/i");
+                    $wea[$j][] = Crawler::select($data[$j], "//p[@class='tem']/i");
                     $wea[$j][] = $winDirect;
                 }
 
                 $wea[$j][] = preg_replace("/&lt;/", '<',
-                    $crawler->select($data[$j], "//p[@class='win']//i"));
+                    Crawler::select($data[$j], "//p[@class='win']//i"));
                 $wea[$j][] = $coldDress[$z];
                 $wea[$j][] = $coldDress[$z + 1];
             }
@@ -84,9 +82,6 @@ class GetWeatherController extends Controller
         }
 
         return $wea;
-//        return response()->json(
-//            array_merge($this->success, ['city' => $target['cityName']], ['data' => $wea]),
-//            200, [], 256);
     }
 
     public function getCityCode(string $city)
@@ -95,10 +90,7 @@ class GetWeatherController extends Controller
                         ['city_name', 'like', '%' . $city . '%'],
                         ['china_weather_city_code', '!=', null]
                     ])->select('china_weather_city_code', 'city_name')->groupBy('city_name')->get();
-        //dd($result[0]);
-        //$crawler = new Crawler();
-        //$result = $crawler->select(file_get_contents(__DIR__ . '/../../../../public/weatherCityCode.xml'),
-        //    "//county[contains('{$city}', @name)]/@weathercode");
+
         return count($result) == 1 ? [$result[0]->china_weather_city_code, $result[0]->city_name] : false;
     }
 
