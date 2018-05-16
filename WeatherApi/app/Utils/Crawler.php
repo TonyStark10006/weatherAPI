@@ -5,6 +5,7 @@ class Crawler
 {
     protected $data;
     public static $errorMsg;
+    public static $domObj;
 
     /**
      * @return mixed
@@ -26,7 +27,8 @@ class Crawler
         curl_setopt_array($ch, [
             CURLOPT_URL => $url,
             //CURLOPT_ENCODING => "gzip",
-            CURLOPT_RETURNTRANSFER  => true
+            CURLOPT_RETURNTRANSFER  => true,
+            CURLOPT_TIMEOUT => 20
         ]);
 
         $html = curl_exec($ch);
@@ -35,17 +37,26 @@ class Crawler
             self::$errorMsg = curl_error($ch);
             return false;
         }
-        $html = @mb_convert_encoding($html, 'UTF-8');
-        curl_close($ch);
-        return $html;
+
+        if (curl_getinfo($ch, CURLINFO_HTTP_CODE) == 200) {
+            $html = @mb_convert_encoding($html, 'UTF-8');
+            curl_close($ch);
+            return $html;
+        }
+
+        return false;
+
     }
 
     public static function select($html, $selector)
     {
-        $model = new \DOMDocument();
+        if (!is_object(self::$domObj)) {
+            self::$domObj = new \DOMDocument();
+        }
+
         //加入xml声明标签，保证二次筛选不会出现乱码
-        @$model->loadHTML('<?xml encoding="UTF-8">' . $html);
-        $task = new \DOMXPath($model);
+        @self::$domObj->loadHTML('<?xml encoding="UTF-8">' . $html);
+        $task = new \DOMXPath(self::$domObj);
         $elements = $task->query($selector);
         $data = array();
 
@@ -61,7 +72,7 @@ class Crawler
                 $content = preg_replace(
                     array("#^<{$element->nodeName}.*>#isU","#</{$element->nodeName}>$#isU"),
                     array('', ''),
-                    $model->saveXML($element)
+                    self::$domObj->saveXML($element)
                 );
             }
             $data[] = $content;

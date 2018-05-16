@@ -59,7 +59,6 @@ class GetWeatherController extends Controller
             $data = Crawler::select($filtedHtml,
                 "//ul[contains(@class, 't clearfix')]/li[contains(@class, 'sky skyid')]");
 
-            debugbar()->info($data);
             for ($j = 0, $z = 0; $j < count($data); $j++, $z = $z + 2) {
                 $wea[$j][] = Crawler::select($data[$j], '//h1');
                 $wea[$j][] = Crawler::select($data[$j], "//p[@class='wea']");

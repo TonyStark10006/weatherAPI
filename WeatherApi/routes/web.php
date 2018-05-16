@@ -19,4 +19,4 @@
 //    return '哈哈';
 //});
 
-Route::get('/', 'GetWeatherController@test');
+//Route::get('/', 'GetWeatherController@test');
