@@ -44,38 +44,50 @@ class GetWeatherController extends Controller
         if (Redis::keys($target)) {
             $wea = unserialize(Redis::get($target));
         } else {
-            $url = 'http://www.weather.com.cn/weather/' . $target . '.shtml';
-            $originHtml = Crawler::download($url);
-            if (!$originHtml) {
-                Log::error('下载城市代码为' . $target . '的天气信息网页出错 - 错误信息: ' . Crawler::getErrorMsg());
-                return 'nothing found';
+            $forecastHtml = self::download($target);
+            if ($forecastHtml == 'nothing found') {
+                return $forecastHtml;
             }
 
-            $filtedHtml = Crawler::extraRule($originHtml,'/<[0-9]/', '&lt;3');
-            $coldDress = Crawler::select($filtedHtml, "
+            $filteredHtml = Crawler::extraRule($forecastHtml,'/<[0-9]/', '&lt;3');
+            $coldDress = Crawler::select($filteredHtml, "
             //ul[contains(@class, 'clearfix')]/li[contains(@class, 'li2')]//p | 
             //ul[contains(@class, 'clearfix')]/li[@class='li3 hot']/a/p"
             );
-            $data = Crawler::select($filtedHtml,
+            $data = Crawler::select($filteredHtml,
                 "//ul[contains(@class, 't clearfix')]/li[contains(@class, 'sky skyid')]");
-
+            //dd($target);
             for ($j = 0, $z = 0; $j < count($data); $j++, $z = $z + 2) {
-                $wea[$j][] = Crawler::select($data[$j], '//h1');
-                $wea[$j][] = Crawler::select($data[$j], "//p[@class='wea']");
+                $wea[$j]['date'] = Crawler::select($data[$j], '//h1');
+                $wea[$j]['text'] = Crawler::select($data[$j], "//p[@class='wea']");
+                $icon = Crawler::select($data[$j], "//big/@class");
+                $wea[$j]['icon'] = strlen($icon[0]) > 5 ? substr($icon[0], -3, 3) : substr($icon[1], -3, 3);
                 if (is_array($winDirect = Crawler::select($data[$j], "//p[@class='win']/em//@title"))) {
-                    $wea[$j][] = Crawler::select($data[$j], "//p[@class='tem']/span") . " - " .
+                    $wea[$j]['tem'] = Crawler::select($data[$j], "//p[@class='tem']/span") . " - " .
                         Crawler::select($data[$j], "//p[@class='tem']/i");
-                    $wea[$j][] = $winDirect[0] . " - " . $winDirect[1];
+                    $wea[$j]['winDirect'] = $winDirect[0] . " - " . $winDirect[1];
                 } else {
-                    $wea[$j][] = Crawler::select($data[$j], "//p[@class='tem']/i");
-                    $wea[$j][] = $winDirect;
+                    $wea[$j]['tem'] = Crawler::select($data[$j], "//p[@class='tem']/i");
+                    $wea[$j]['winDirect'] = $winDirect;
                 }
 
-                $wea[$j][] = preg_replace("/&lt;/", '<',
+                $wea[$j]['winPower'] = preg_replace("/&lt;/", '<',
                     Crawler::select($data[$j], "//p[@class='win']//i"));
-                $wea[$j][] = $coldDress[$z];
-                $wea[$j][] = $coldDress[$z + 1];
+                $wea[$j]['tips'] = $coldDress[$z];
+                $wea[$j]['dressTips'] = $coldDress[$z + 1];
             }
+
+//            $todayHtml = self::download($target, 'weather1dn');
+//            if ($todayHtml == 'nothing found') {
+//                return $forecastHtml;
+//            }
+//
+//            $todayDetails = Crawler::select($todayHtml,
+//                "//div[@class='todayRight']/script"
+//            );
+//            dd($todayDetails);
+
+
             Redis::set($target, serialize($wea));
             Redis::expire($target, 21600);
         }
@@ -104,6 +116,23 @@ class GetWeatherController extends Controller
             ['city_name', $cityCode],
             ['china_weather_city_code', '!=', null]
         ])->value('china_weather_city_code');
+    }
+
+    public function download(int $target, string $url = 'weather')
+    {
+        $url1 = 'http://www.weather.com.cn/' . $url . '/' . $target . '.shtml';
+        $originHtml = Crawler::download($url1);
+        //dd($originHtml);
+        if (!$originHtml) {
+            if (empty(Crawler::getErrorMsg())) {
+                Log::error('下载网页出错，状态码: ' . Crawler::getHttpCode() . "，URL: " . $url1);
+            } else {
+                Log::error('下载城市代码为' . $target . '的天气信息网页出错 - 错误信息: ' . Crawler::getErrorMsg());
+            }
+            return 'nothing found';
+        }
+
+        return $originHtml;
     }
 
 }

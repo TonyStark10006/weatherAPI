@@ -1,11 +1,22 @@
 <?php
 namespace App\Utils;
 
+use Illuminate\Support\Facades\Log;
+
 class Crawler
 {
     protected $data;
     public static $errorMsg;
     public static $domObj;
+    public static $httpCode;
+
+    /**
+     * @return mixed
+     */
+    public static function getHttpCode()
+    {
+        return self::$httpCode;
+    }
 
     /**
      * @return mixed
@@ -33,17 +44,18 @@ class Crawler
 
         $html = curl_exec($ch);
 
-        if (!$html) {
+        if (curl_errno($ch)) {
             self::$errorMsg = curl_error($ch);
             return false;
         }
 
-        if (curl_getinfo($ch, CURLINFO_HTTP_CODE) == 200) {
+        if ((self::$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE)) == 200) {
             $html = @mb_convert_encoding($html, 'UTF-8');
             curl_close($ch);
             return $html;
         }
 
+        curl_close($ch);
         return false;
 
     }
