@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\CNRegions;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Redis;
 
 class GetRegionsController extends Controller
 {
@@ -35,15 +36,25 @@ class GetRegionsController extends Controller
 
     public function getAllRegions()
     {
-        $results = CNRegions::select('province_code', 'province_name')->groupBy('province_code')->get();
+        if (Redis::keys('allRegions')) {
+            $results = unserialize(Redis::get('allRegions'));
+        } else {
+            $results = CNRegions::select('province_code', 'province_name')->groupBy('province_code')->get();
+            Redis::set('allRegions', serialize($results));
+        }
 
         return self::outPutResult($results);
     }
 
     public function getCites($provinceCode)
     {
-        $results = CNRegions::where('province_code', $provinceCode)
-            ->groupBy('city_code')->select('city_code', 'city_name')->get();
+        if (Redis::keys($provinceCode)) {
+            $results = unserialize(Redis::get($provinceCode));
+        } else {
+            $results = CNRegions::where('province_code', $provinceCode)
+                ->groupBy('city_code')->select('city_code', 'city_name')->get();
+            Redis::set($provinceCode, serialize($results));
+        }
 
         return self::outPutResult($results, 2);
     }

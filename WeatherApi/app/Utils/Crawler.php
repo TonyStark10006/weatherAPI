@@ -1,8 +1,6 @@
 <?php
 namespace App\Utils;
 
-use Illuminate\Support\Facades\Log;
-
 class Crawler
 {
     protected $data;
