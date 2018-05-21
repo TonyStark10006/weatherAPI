@@ -11,7 +11,7 @@
  Target Server Version : 50721
  File Encoding         : 65001
 
- Date: 19/05/2018 13:28:06
+ Date: 21/05/2018 18:39:55
 */
 
 SET NAMES utf8mb4;
@@ -392,7 +392,7 @@ INSERT INTO `cn_regions` VALUES (351, 440000, '广东省', 445100, '潮州市', 
 INSERT INTO `cn_regions` VALUES (352, 440000, '广东省', 445100, '潮州市', 445102, '湘桥区', NULL);
 INSERT INTO `cn_regions` VALUES (353, 440000, '广东省', 441900, '东莞市', 441901103, '茶山镇', NULL);
 INSERT INTO `cn_regions` VALUES (354, 440000, '广东省', 441900, '东莞市', 441901110, '常平镇', NULL);
-INSERT INTO `cn_regions` VALUES (355, 440000, '广东省', 441900, '东莞市', 441901119, '长安镇', 101110102);
+INSERT INTO `cn_regions` VALUES (355, 440000, '广东省', 441900, '东莞市', 441901119, '长安镇', 101281601);
 INSERT INTO `cn_regions` VALUES (356, 440000, '广东省', 441900, '东莞市', 441901113, '大朗镇', NULL);
 INSERT INTO `cn_regions` VALUES (357, 440000, '广东省', 441900, '东莞市', 441901118, '大岭山镇', NULL);
 INSERT INTO `cn_regions` VALUES (358, 440000, '广东省', 441900, '东莞市', 441901124, '道滘镇', NULL);
