@@ -35,14 +35,14 @@ class GetWeatherController extends Controller
             }
         }
 
-        return is_array($data) ? self::mergeResponse(self::$success, $data, 'city', $city) :
-            self::mergeResponse(self::$failure, $data, 'city', $city);
+        return is_array($data) ? self::mergeResponse(self::$success, $data, ['city' => $city]) :
+            self::mergeResponse(self::$failure, $data, ['city' => $city]);
     }
 
     public function getWeatherMsg(int $target)
     {
         if (Redis::keys($target)) {
-            $wea = unserialize(Redis::get($target));
+            $weather = unserialize(Redis::get($target));
         } else {
             $forecastHtml = self::download($target);
             if ($forecastHtml == 'nothing found') {
@@ -57,6 +57,7 @@ class GetWeatherController extends Controller
             $data = Crawler::select($filteredHtml,
                 "//ul[contains(@class, 't clearfix')]/li[contains(@class, 'sky skyid')]");
             //dd($target);
+            $updateTime = Crawler::select($filteredHtml, "//h1[@class='clearfix city']/i");
             for ($j = 0, $z = 0; $j < count($data); $j++, $z = $z + 2) {
                 $wea[$j]['date'] = Crawler::select($data[$j], '//h1');
                 $wea[$j]['text'] = Crawler::select($data[$j], "//p[@class='wea']");
@@ -87,12 +88,16 @@ class GetWeatherController extends Controller
 //            );
 //            dd($todayDetails);
 
-
-            Redis::set($target, serialize($wea));
-            Redis::expire($target, 21600);
+            if (isset($wea)) {
+                $weather = ['updateTime' => $updateTime, 'data' => $wea];
+                Redis::set($target, serialize($weather));
+                Redis::expire($target, 21600);
+            } else {
+                $weather = 'nothing found';
+            }
         }
 
-        return $wea;
+        return $weather;
     }
 
     public function getCityCode(string $city)

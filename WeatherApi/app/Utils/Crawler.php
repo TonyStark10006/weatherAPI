@@ -60,7 +60,7 @@ class Crawler
 
     }
 
-    public static function select($html, $selector)
+    public static function select($html, $selector, $remove = false)
     {
         if (!is_object(self::$domObj)) {
             self::$domObj = new \DOMDocument();
@@ -73,19 +73,24 @@ class Crawler
         $data = array();
 
         foreach ($elements as $element) {
-            //根据标签类型保存信息，
-            $nodeType = $element->nodeType;
-            if ($nodeType == 1 && in_array($nodeType, array('img'))) {
-                $content = $element->getAttribute('src');
-            } elseif ($nodeType == 2 || $nodeType == 3 || $nodeType == 4) {
-                $content = $element->nodeValue;
+            if ($remove) {
+                // xpath取走查询到的节点，保存原来存放在domObj的html数据即可
+                $content = self::$domObj->saveXML($element);
             } else {
-                //去除选取标签本身
-                $content = preg_replace(
-                    array("#^<{$element->nodeName}.*>#isU","#</{$element->nodeName}>$#isU"),
-                    array('', ''),
-                    self::$domObj->saveXML($element)
-                );
+                //根据标签类型保存信息，
+                $nodeType = $element->nodeType;
+                if ($nodeType == 1 && in_array($nodeType, array('img'))) {
+                    $content = $element->getAttribute('src');
+                } elseif ($nodeType == 2 || $nodeType == 3 || $nodeType == 4) {
+                    $content = $element->nodeValue;
+                } else {
+                    //去除选取标签本身
+                    $content = preg_replace(
+                        array("#^<{$element->nodeName}.*>#isU","#</{$element->nodeName}>$#isU"),
+                        array('', ''),
+                        self::$domObj->saveXML($element)
+                    );
+                }
             }
             $data[] = $content;
         }
@@ -100,6 +105,11 @@ class Crawler
     public static function extraRule($html, $pattern, $replacement)
     {
         return preg_replace($pattern, $replacement, $html);
+    }
+
+    public static function remove($html, $selector)
+    {
+        return self::select($html, $selector, $remove = true);
     }
 
 }
