@@ -66,7 +66,11 @@ class GetWeatherController extends Controller
                 if (is_array($winDirect = Crawler::select($data[$j], "//p[@class='win']/em//@title"))) {
                     $wea[$j]['tem'] = Crawler::select($data[$j], "//p[@class='tem']/span") . " - " .
                         Crawler::select($data[$j], "//p[@class='tem']/i");
-                    $wea[$j]['winDirect'] = $winDirect[0] . " 转 " . $winDirect[1];
+                    if ($winDirect[0] != $winDirect[1]) {
+                        $wea[$j]['winDirect'] = $winDirect[0] . " 转 " . $winDirect[1];
+                    } else {
+                        $wea[$j]['winDirect'] = $winDirect[0];
+                    }
                 } else {
                     $wea[$j]['tem'] = Crawler::select($data[$j], "//p[@class='tem']/i");
                     $wea[$j]['winDirect'] = $winDirect;
